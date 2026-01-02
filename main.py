@@ -1,10 +1,11 @@
 from fastapi import FastAPI
 import models
-
+from routes import auth
 app = FastAPI()
 
 models.SQLModel.metadata.create_all(models.engine)
 
+app.include_router(auth.router)
 
 @app.get("/")
 def root():

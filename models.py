@@ -1,4 +1,4 @@
-from sqlmodel import SQLModel, create_engine, Field
+from sqlmodel import SQLModel, create_engine, Field, Session
 from pydantic import EmailStr
 from datetime import datetime
 from enum import Enum
@@ -25,6 +25,7 @@ class User(SQLModel, table=True):
     name : str = Field(..., min_length=2, max_length=60)
     email : EmailStr = Field(unique=True)
     password_hash : str
+    is_active : bool | None = Field(default=False) 
     created_at : datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -42,3 +43,7 @@ class Task(SQLModel, table=True):
 
 
 engine = create_engine(os.getenv("DATABASE_URL"))
+
+def get_db():
+    with Session(engine) as db:
+        yield db
