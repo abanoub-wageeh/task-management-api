@@ -25,6 +25,7 @@ class User(SQLModel, table=True):
     name : str = Field(..., min_length=2, max_length=60)
     email : EmailStr = Field(unique=True)
     password_hash : str
+    refresh_token : str | None = Field(default=None)
     is_active : bool | None = Field(default=False) 
     created_at : datetime = Field(default_factory=datetime.utcnow)
 
