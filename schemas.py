@@ -10,3 +10,8 @@ class UserCreate(BaseModel):
 class UserLogin(BaseModel):
     email : EmailStr
     password : str
+
+class PasswordReset(BaseModel):
+    old_password : str
+    new_password : str
+    new_password_conform : str

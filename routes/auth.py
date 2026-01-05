@@ -69,3 +69,20 @@ def revoke_refresh_token(db : Session = Depends(models.get_db), user_id = Depend
     user.refresh_token = None
     db.commit()
     return {"message": "refresh token has been revoked successfully"}
+
+
+@router.post("/change_password")
+def change_password(password_data : schemas.PasswordReset, db : Session = Depends(models.get_db), user_id = Depends(oauth2.get_current_user)):
+    user = db.get(models.User, user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="user not found, create an account")
+    if not utils.verify_password(password_data.old_password, user.password_hash):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid credentials")
+    if password_data.new_password != password_data.new_password_conform:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="passwords do not match")
+    if len(password_data.new_password) < 8:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password must be at least 8 characters")
+    new_password = utils.hash_password(password_data.new_password)
+    user.password_hash = new_password
+    db.commit()
+    return {"message": "password has been changed successfully"}
