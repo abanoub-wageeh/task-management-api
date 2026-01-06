@@ -86,3 +86,23 @@ def change_password(password_data : schemas.PasswordReset, db : Session = Depend
     user.password_hash = new_password
     db.commit()
     return {"message": "password has been changed successfully"}
+
+@router.post("/forget_password")
+def forget_password(email : schemas.EmailSend, db : Session = Depends(models.get_db)):
+    user = db.exec(select(models.User).where(models.User.email == email.email)).first()
+    if user:
+        utils.send_reset_password_email(receiver_email=user.email,reset_token = oauth2.create_reset_password_token({"user_id": user.user_id}))
+    return {"message": "an email has been sent to you to reset your password"}
+
+
+@router.post("/forget_password/reset")
+def reset_password(token : str, password : schemas.PasswordForget, db : Session = Depends(models.get_db)):
+    user_id = oauth2.verify_account(token)
+    user = db.get(models.User, user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid or expired token")
+    if password.new_password != password.new_password_conform:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="password do not match")
+    user.password_hash = utils.hash_password(password.new_password)
+    db.commit()
+    return {"message": "password has been reset successfully"}

@@ -41,6 +41,9 @@ def create_verification_token(data: dict):
         {**data, "typ": "verify"}, expires_delta=timedelta(minutes=10)
     )
 
+def create_reset_password_token(data : dict):
+    return create_token({**data, "typ" : "verify"}, expire_delta=timedelta(minutes=10))
+
 def decode_token(token: str):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -68,4 +71,3 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     user_id, payload = decode_token(token)
     if payload.get("typ") != "access":
         raise HTTPException(status_code=401, detail="invalid token type")
-    return user_id

@@ -72,3 +72,45 @@ def send_verification_email(receiver_email: str, verification_token: str):
         subject="Verify your Email Address",
         html_content=html
     )
+
+def send_reset_password_email(receiver_email : str, reset_token: str):
+    reset_link = f"http://127.0.0.1:8000/forget_password/reset?token={reset_token}"
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+            
+            <h2 style="color: #4A90E2; text-align:center;">Reset Your Password</h2>
+
+            <p>We received a request to reset your password for your account on the Task Management Platform.</p>
+
+            <p>Please click the button below to choose a new password:</p>
+
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{reset_link}"
+                style="background-color: #4A90E2; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                Reset Password
+                </a>
+            </div>
+
+            <p><strong>This link will expire in 10 minutes.</strong></p>
+
+            <p>If the button doesn’t work, copy and paste this link into your browser:</p>
+
+            <p style="word-break: break-all;">
+                <a href="{reset_link}">{reset_link}</a>
+            </p>
+
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+
+            <p style="font-size: 12px; color: #888;">
+                If you did not request a password reset, you can safely ignore this email. 
+                Your password will remain unchanged.
+            </p>
+
+        </div>
+    </body>
+    </html>
+    """
+    return send_email(to_email=receiver_email, subject="Reset you password", html_content=html)
