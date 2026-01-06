@@ -71,3 +71,4 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     user_id, payload = decode_token(token)
     if payload.get("typ") != "access":
         raise HTTPException(status_code=401, detail="invalid token type")
+    return user_id

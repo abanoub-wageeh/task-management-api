@@ -42,6 +42,8 @@ class Task(SQLModel, table=True):
     created_at : datetime = Field(default_factory=datetime.utcnow)
     updated_at : datetime = Field(default_factory=datetime.utcnow)
 
+    user_id : int | None = Field(default=None, foreign_key="users.user_id")
+
 
 engine = create_engine(os.getenv("DATABASE_URL"))
 
