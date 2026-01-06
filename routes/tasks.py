@@ -41,3 +41,12 @@ def update_task(task_id : int, task_data : schemas.TaskUpdate, db : Session = De
     db.commit()
     db.refresh(task)
     return task
+
+@router.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_task(task_id : int, db : Session = Depends(models.get_db), user_id = Depends(oauth2.get_current_user)):
+    task = db.exec(select(models.Task).where(models.Task.task_id == task_id, models.Task.user_id == user_id)).first()
+    if not task:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="task not found")
+    db.delete(task)
+    db.commit()
+    return {"message": "the task has been deleted successfully"}
