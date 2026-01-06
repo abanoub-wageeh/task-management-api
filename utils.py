@@ -19,24 +19,33 @@ def verify_password(plain_password, hashed_password):
 
 
 
-def send_verification_email(receiver_email, verification_token):
-    # Configuration
-    smtp_server = "smtp.gmail.com"
-    smtp_port = 465  # For SSL
-    sender_email = os.getenv("EMAIL")
-    sender_password = os.getenv("APP_PASSWORD")
+SMTP_SERVER = "smtp.gmail.com"
+SMTP_PORT = 465
+SENDER_EMAIL = os.getenv("EMAIL")
+SENDER_PASSWORD = os.getenv("APP_PASSWORD")
 
-    # Create the verification link (Update with your actual domain)
+
+def send_email(to_email: str, subject: str, html_content: str):
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = SENDER_EMAIL
+    msg["To"] = to_email
+    msg.add_alternative(html_content, subtype="html")
+
+    try:
+        with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT) as smtp:
+            smtp.login(SENDER_EMAIL, SENDER_PASSWORD)
+            smtp.send_message(msg)
+        return True
+    except Exception as e:
+        print(f"Email sending error: {e}")
+        return False
+
+
+def send_verification_email(receiver_email: str, verification_token: str):
     verification_link = f"http://127.0.0.1:8000/verify?token={verification_token}"
 
-    # Compose the email
-    msg = EmailMessage()
-    msg['Subject'] = "Verify your Email Address"
-    msg['From'] = sender_email
-    msg['To'] = receiver_email
-
-    # 2. HTML Version
-    html_content = f"""
+    html = f"""
     <!DOCTYPE html>
     <html>
     <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
@@ -57,15 +66,9 @@ def send_verification_email(receiver_email, verification_token):
     </body>
     </html>
     """
-    msg.add_alternative(html_content, subtype='html')
 
-    # Send the email
-    try:
-        with smtplib.SMTP_SSL(smtp_server, smtp_port) as smtp:
-            smtp.login(sender_email, sender_password)
-            smtp.send_message(msg)
-        print(f"Verification email sent successfully to {receiver_email}")
-        return True
-    except Exception as e:
-        print(f"Error: {e}")
-        return False
+    return send_email(
+        to_email=receiver_email,
+        subject="Verify your Email Address",
+        html_content=html
+    )
