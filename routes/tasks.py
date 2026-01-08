@@ -114,13 +114,13 @@ def delete_task(
 ):
     task = db.exec(
         select(models.Task).where(
-            models.Task.task_id == task_id, models.Task.user_id == user_id
+            models.Task.task_id == task_id, models.Task.user_id == user_id, models.Task.is_deleted == False
         )
     ).first()
     if not task:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="task not found"
         )
-    db.delete(task)
+    task.is_deleted = True
+    task.deleted_at = datetime.utcnow()
     db.commit()
-    return {"message": "the task has been deleted successfully"}

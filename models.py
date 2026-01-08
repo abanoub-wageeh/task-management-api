@@ -41,6 +41,8 @@ class Task(SQLModel, table=True):
     due_date : datetime | None = Field(default=None)
     created_at : datetime = Field(default_factory=datetime.utcnow)
     updated_at : datetime = Field(default_factory=datetime.utcnow)
+    is_deleted : bool = Field(default=False)
+    deleted_at : datetime | None = Field(default=None)
 
     user_id : int | None = Field(default=None, foreign_key="users.user_id")
 
