@@ -124,3 +124,15 @@ def delete_task(
     task.is_deleted = True
     task.deleted_at = datetime.utcnow()
     db.commit()
+
+
+@router.post("/tasks/{task_id}/restore", response_model=schemas.TaskResponse)
+def restore_deleted_task(task_id : int, db : Session = Depends(models.get_db), user_id = Depends(oauth2.get_current_user)):
+    task = db.exec(select(models.Task).where(models.Task.task_id == task_id, models.Task.user_id == user_id, models.Task.is_deleted == True)).first()
+    if not task:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="deleted task not found")
+    task.is_deleted = False
+    task.deleted_at = None
+    db.commit()
+    db.refresh(task)
+    return task
