@@ -43,7 +43,7 @@ def get_all_tasks(
     db: Session = Depends(models.get_db),
     user_id=Depends(oauth2.get_current_user),
 ):
-    statement = select(models.Task).where(models.Task.user_id == user_id)
+    statement = select(models.Task).where(models.Task.user_id == user_id, models.Task.is_deleted == False)
     # filtering
     if status:
         statement = statement.where(models.Task.status == status)
@@ -70,7 +70,7 @@ def get_a_task(
 ):
     task = db.exec(
         select(models.Task).where(
-            models.Task.task_id == task_id, models.Task.user_id == user_id
+            models.Task.task_id == task_id, models.Task.user_id == user_id, models.Task.is_deleted == False
         )
     ).first()
     if not task:
@@ -89,7 +89,7 @@ def update_task(
 ):
     task = db.exec(
         select(models.Task).where(
-            models.Task.task_id == task_id, models.Task.user_id == user_id
+            models.Task.task_id == task_id, models.Task.user_id == user_id, models.Task.is_deleted == False
         )
     ).first()
     if not task:
