@@ -1,9 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
-import models
-import schemas
-import utils
-import oauth2
+from app import models, schemas
+from .. import utils, oauth2
 router = APIRouter(tags=["authorization"])
 
 
@@ -17,7 +15,7 @@ def create_account(user_data : schemas.UserCreate, db : Session = Depends(models
     new_user.password_hash = hashed_password
     db.add(new_user)
     db.commit()
-    token = oauth2.create_access_token({"user_id": new_user.user_id})
+    token = oauth2.create_verification_token({"user_id": new_user.user_id})
     utils.send_verification_email(new_user.email, token)
     return {"message": "user had been created successfully, check your email to verify your account"}
 
@@ -33,7 +31,6 @@ def verify_account(token : str, db : Session = Depends(models.get_db)):
     user.is_active = True
     db.commit()
     return {"message": "your account has been verified successfully"}
-
 
 
 @router.post("/login")

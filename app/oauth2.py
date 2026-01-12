@@ -38,7 +38,7 @@ def create_refresh_token(data : dict):
 
 def create_verification_token(data: dict):
     return create_token(
-        {**data, "typ": "verify"}, expires_delta=timedelta(minutes=10)
+        {**data, "typ": "verify"}, expire_delta=timedelta(minutes=10)
     )
 
 def create_reset_password_token(data : dict):

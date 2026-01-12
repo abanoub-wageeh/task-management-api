@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends, status, HTTPException, Query
 from sqlmodel import Session, select
-import schemas
-import models
-import oauth2
+from app import schemas, models
+from .. import oauth2
 from datetime import datetime
 from enum import Enum
 

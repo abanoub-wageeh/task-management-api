@@ -1,10 +1,10 @@
 from fastapi import FastAPI
-import models
-from routes import auth, tasks
+from app.routes import auth, tasks, comments
 app = FastAPI()
 
 app.include_router(auth.router)
 app.include_router(tasks.router)
+app.include_router(comments.router)
 
 @app.get("/")
 def root():

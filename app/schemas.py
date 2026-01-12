@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field
-import models
+from app import models
 from datetime import datetime
 
 class UserCreate(BaseModel):
@@ -27,7 +27,6 @@ class PasswordForget(BaseModel):
     new_password_conform : str = Field(..., min_length=8)
 
 
-
 class TaskCreate(BaseModel):
     title: str = Field(..., min_length=2, max_length=100)
     description: str = Field(..., min_length=15, max_length=500)
@@ -49,3 +48,14 @@ class TaskUpdate(BaseModel):
     priority: models.PriorityEnum | None = Field(default=None)
     status: models.StatusEnum | None = Field(default=None)
     due_date: models.datetime | None = Field(default=None)
+
+
+class CommentCreate(BaseModel):
+    content : str = Field(..., min_length=2, max_length=500)
+
+class CommentResponse(BaseModel):
+    content : str
+    created_at : datetime
+
+class CommentUpdate(BaseModel):
+    content: str = Field(..., min_length=2, max_length=500)
