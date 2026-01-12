@@ -4,7 +4,7 @@ A simple task management REST API built with FastAPI.
 
 ## Database Design
 
-![ERD Diagram](./erd-diagram.png)
+![ERD Diagram](app/erd-diagram.png)
 
 The system includes:
 

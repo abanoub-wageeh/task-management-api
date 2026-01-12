@@ -46,6 +46,16 @@ class Task(SQLModel, table=True):
 
     user_id : int | None = Field(default=None, foreign_key="users.user_id")
 
+class Comment(SQLModel, table=True):
+    __tablename__ = "comments"
+
+    comment_id : int | None = Field(default=None, primary_key=True)
+    content : str = Field(..., min_length=2, max_length=500)
+    created_at : datetime = Field(default_factory=datetime.utcnow)
+    updated_at : datetime = Field(default_factory=datetime.utcnow)
+    user_id : int | None = Field(default=None, foreign_key="users.user_id")
+    task_id : int | None = Field(default=None, foreign_key="tasks.task_id")
+    
 
 engine = create_engine(os.getenv("DATABASE_URL"))
 

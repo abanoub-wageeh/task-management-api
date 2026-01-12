@@ -3,8 +3,6 @@ import models
 from routes import auth, tasks
 app = FastAPI()
 
-models.SQLModel.metadata.create_all(models.engine)
-
 app.include_router(auth.router)
 app.include_router(tasks.router)
 
