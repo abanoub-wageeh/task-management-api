@@ -46,6 +46,8 @@ class Task(SQLModel, table=True):
 
     user_id : int | None = Field(default=None, foreign_key="users.user_id")
 
+    project_id: int | None = Field(default=None, foreign_key="projects.project_id")
+
 class Comment(SQLModel, table=True):
     __tablename__ = "comments"
 
@@ -55,10 +57,34 @@ class Comment(SQLModel, table=True):
     updated_at : datetime = Field(default_factory=datetime.utcnow)
     user_id : int | None = Field(default=None, foreign_key="users.user_id")
     task_id : int | None = Field(default=None, foreign_key="tasks.task_id")
-    
+
 
 engine = create_engine(os.getenv("DATABASE_URL"))
 
 def get_db():
     with Session(engine) as db:
         yield db
+
+
+class ProjectStatusEnum(str, Enum):
+    ACTIVE = "active"
+    ARCHIVED = "archived"
+    COMPLETED = "completed"
+
+
+class Project(SQLModel, table=True):
+    __tablename__ = "projects"
+
+    project_id: int | None = Field(default=None, primary_key=True)
+    name: str = Field(..., min_length=2, max_length=100)
+    description: str | None = Field(default=None, max_length=500)
+
+    status: ProjectStatusEnum = Field(default=ProjectStatusEnum.ACTIVE)
+
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    is_deleted: bool = Field(default=False)
+    deleted_at: datetime | None = Field(default=None)
+
+    owner_id: int | None = Field(default=None, foreign_key="users.user_id")
