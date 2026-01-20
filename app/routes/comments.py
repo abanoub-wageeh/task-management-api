@@ -8,7 +8,7 @@ router = APIRouter(tags=["comments"])
 
 @router.post("/tasks/{task_id}/comments", status_code=status.HTTP_201_CREATED, response_model=schemas.CommentResponse)
 def add_comment(task_id : int, comment_data : schemas.CommentCreate, db : Session = Depends(get_db), user_id = Depends(oauth2.get_current_user)):
-    task = db.get(models.Task, task_id)
+    task = db.exec(select(models.Task).where(models.Task.task_id == task_id, models.Task.user_id == user_id, models.Task.is_deleted == False)).first()
     if not task:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="task not found")
     new_comment = models.Comment(content=comment_data.content, user_id=user_id, task_id=task_id)
