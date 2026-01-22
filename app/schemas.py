@@ -59,3 +59,19 @@ class CommentResponse(BaseModel):
 
 class CommentUpdate(BaseModel):
     content: str = Field(..., min_length=2, max_length=500)
+
+class ProjectCreate(BaseModel):
+    name : str = Field(..., min_length=2, max_length=100)
+    description : str = Field(..., max_length=500)
+    status : models.ProjectStatusEnum | None = Field(default=None)
+
+class ProjectResponse(BaseModel):
+    project_id : int
+    name : str
+    description : str
+    status : models.ProjectStatusEnum
+
+class ProjectUpdate(BaseModel):
+    name : str = Field(..., min_length=2, max_length=100)
+    description : str = Field(..., max_length=500)
+    status : models.ProjectStatusEnum | None = Field(default=None)
