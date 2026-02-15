@@ -72,6 +72,12 @@ class ProjectStatusEnum(str, Enum):
     COMPLETED = "completed"
 
 
+class ProjectRoleEnum(str, Enum):
+    OWNER = "owner"
+    EDITOR = "editor"
+    VIEWER = "viewer"
+
+
 class Project(SQLModel, table=True):
     __tablename__ = "projects"
 
@@ -88,3 +94,13 @@ class Project(SQLModel, table=True):
     deleted_at: datetime | None = Field(default=None)
 
     owner_id: int | None = Field(default=None, foreign_key="users.user_id")
+
+
+class ProjectMember(SQLModel, table=True):
+    __tablename__ = "project_members"
+
+    member_id: int | None = Field(default=None, primary_key=True)
+    project_id: int = Field(foreign_key="projects.project_id")
+    user_id: int = Field(foreign_key="users.user_id")
+    role: ProjectRoleEnum = Field(default=ProjectRoleEnum.VIEWER)
+    joined_at: datetime = Field(default_factory=datetime.utcnow)

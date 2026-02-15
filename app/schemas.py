@@ -75,3 +75,23 @@ class ProjectUpdate(BaseModel):
     name : str = Field(..., min_length=2, max_length=100)
     description : str = Field(..., max_length=500)
     status : models.ProjectStatusEnum | None = Field(default=None)
+
+
+class UserBasic(BaseModel):
+    user_id : int
+    name : str
+    email : EmailStr
+
+class ProjectMemberAdd(BaseModel):
+    user_email : EmailStr
+    role : models.ProjectRoleEnum = Field(default=models.ProjectRoleEnum.VIEWER)
+
+class ProjectMemberResponse(BaseModel):
+    member_id : int
+    project_id : int
+    user : UserBasic
+    role : models.ProjectRoleEnum
+    joined_at : datetime
+
+class ProjectMemberRoleUpdate(BaseModel):
+    role : models.ProjectRoleEnum
