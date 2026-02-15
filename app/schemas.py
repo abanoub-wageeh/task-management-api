@@ -33,14 +33,17 @@ class TaskCreate(BaseModel):
     priority: models.PriorityEnum = Field(default=models.PriorityEnum.LOW)
     status: models.StatusEnum = Field(default=models.StatusEnum.PENDING)
     due_date: models.datetime | None = Field(default=None)
+    project_id: int | None = Field(default=None)
 
 class TaskResponse(BaseModel):
+    task_id : int
     title : str
     description : str
     status : str
     priority : str
     due_date : datetime
     created_at : datetime
+    project_id : int | None
 
 class TaskUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=2, max_length=100)
