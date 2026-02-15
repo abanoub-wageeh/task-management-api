@@ -34,6 +34,7 @@ class TaskCreate(BaseModel):
     status: models.StatusEnum = Field(default=models.StatusEnum.PENDING)
     due_date: models.datetime | None = Field(default=None)
     project_id: int | None = Field(default=None)
+    assignee_id: int | None = Field(default=None)
 
 class TaskResponse(BaseModel):
     task_id : int
@@ -44,6 +45,8 @@ class TaskResponse(BaseModel):
     due_date : datetime
     created_at : datetime
     project_id : int | None
+    assignee_id : int | None
+    user_id : int
 
 class TaskUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=2, max_length=100)
@@ -51,6 +54,11 @@ class TaskUpdate(BaseModel):
     priority: models.PriorityEnum | None = Field(default=None)
     status: models.StatusEnum | None = Field(default=None)
     due_date: models.datetime | None = Field(default=None)
+    assignee_id: int | None = Field(default=None)
+
+
+class TaskAssignment(BaseModel):
+    assignee_id: int | None = Field(default=None, description="User ID to assign task to, or null to unassign")
 
 
 class CommentCreate(BaseModel):

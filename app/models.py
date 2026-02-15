@@ -45,7 +45,7 @@ class Task(SQLModel, table=True):
     deleted_at : datetime | None = Field(default=None)
 
     user_id : int | None = Field(default=None, foreign_key="users.user_id")
-
+    assignee_id : int | None = Field(default=None, foreign_key="users.user_id")
     project_id: int | None = Field(default=None, foreign_key="projects.project_id")
 
 class Comment(SQLModel, table=True):

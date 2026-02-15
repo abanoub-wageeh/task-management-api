@@ -95,6 +95,31 @@ def create_task(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Project not found"
             )
+        
+        # If assignee is specified, verify they are a project member
+        if task_data.assignee_id:
+            assignee_member = get_project_member(db, task_data.project_id, task_data.assignee_id)
+            if not assignee_member:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Assignee must be a member of the project"
+                )
+    else:
+        # For personal tasks, can only assign to self
+        if task_data.assignee_id and task_data.assignee_id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Personal tasks can only be assigned to yourself"
+            )
+    
+    # Verify assignee exists if provided
+    if task_data.assignee_id:
+        assignee = db.get(models.User, task_data.assignee_id)
+        if not assignee:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Assignee user not found"
+            )
     
     new_task = models.Task(**task_data.model_dump(exclude_unset=True))
     new_task.user_id = user_id
@@ -116,6 +141,7 @@ def get_all_tasks(
     status: models.StatusEnum | None = None,
     priority: models.PriorityEnum | None = None,
     project_id: int | None = None,
+    assignee_id: int | None = None,
     sort_by: SortBy | None = None,
     sort_order : SortOrder | None = None,
     limit : int = Query(default=10, ge=1, le=100),
@@ -152,6 +178,8 @@ def get_all_tasks(
         statement = statement.where(models.Task.status == status)
     if priority:
         statement = statement.where(models.Task.priority == priority)
+    if assignee_id is not None:
+        statement = statement.where(models.Task.assignee_id == assignee_id)
     # sorting
     if sort_by:
         column = getattr(models.Task, sort_by.value)
@@ -214,6 +242,34 @@ def update_task(
         ])
     else:
         check_task_access(db, task, user_id)
+    
+    # Validate assignee_id if being updated
+    if 'assignee_id' in task_data.model_dump(exclude_unset=True):
+        new_assignee_id = task_data.assignee_id
+        if new_assignee_id is not None:
+            # Verify assignee exists
+            assignee = db.get(models.User, new_assignee_id)
+            if not assignee:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Assignee user not found"
+                )
+            
+            # For project tasks, verify assignee is a project member
+            if task.project_id:
+                assignee_member = get_project_member(db, task.project_id, new_assignee_id)
+                if not assignee_member:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Assignee must be a member of the project"
+                    )
+            else:
+                # For personal tasks, can only assign to self
+                if new_assignee_id != user_id:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Personal tasks can only be assigned to yourself"
+                    )
     
     update_data = task_data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
@@ -290,6 +346,7 @@ def get_project_tasks(
     project_id: int,
     status: models.StatusEnum | None = None,
     priority: models.PriorityEnum | None = None,
+    assignee_id: int | None = None,
     sort_by: SortBy | None = None,
     sort_order: SortOrder | None = None,
     limit: int = Query(default=50, ge=1, le=100),
@@ -330,6 +387,8 @@ def get_project_tasks(
         statement = statement.where(models.Task.status == status)
     if priority:
         statement = statement.where(models.Task.priority == priority)
+    if assignee_id is not None:
+        statement = statement.where(models.Task.assignee_id == assignee_id)
     
     # Apply sorting
     if sort_by:
@@ -344,4 +403,133 @@ def get_project_tasks(
     
     tasks = db.exec(statement).all()
     return tasks
+
+
+# ==================== TASK ASSIGNMENT ENDPOINTS ====================
+
+@router.put("/tasks/{task_id}/assign", response_model=schemas.TaskResponse)
+def assign_task(
+    task_id: int,
+    assignment: schemas.TaskAssignment,
+    db: Session = Depends(models.get_db),
+    user_id=Depends(oauth2.get_current_user)
+):
+    """
+    Assign or unassign a task to a user.
+    - For project tasks: assignee must be a project member
+    - For personal tasks: can only assign to yourself
+    - Set assignee_id to null to unassign
+    """
+    task = db.exec(
+        select(models.Task).where(
+            models.Task.task_id == task_id,
+            models.Task.is_deleted == False
+        )
+    ).first()
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found"
+        )
+    
+    # Check if user has permission to assign (owners and editors only for project tasks)
+    if task.project_id:
+        check_task_access(db, task, user_id, [
+            models.ProjectRoleEnum.OWNER,
+            models.ProjectRoleEnum.EDITOR
+        ])
+    else:
+        check_task_access(db, task, user_id)
+    
+    # If assigning to someone
+    if assignment.assignee_id is not None:
+        # Verify assignee exists
+        assignee = db.get(models.User, assignment.assignee_id)
+        if not assignee:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Assignee user not found"
+            )
+        
+        # For project tasks, verify assignee is a project member
+        if task.project_id:
+            assignee_member = get_project_member(db, task.project_id, assignment.assignee_id)
+            if not assignee_member:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Assignee must be a member of the project"
+                )
+        else:
+            # For personal tasks, can only assign to self
+            if assignment.assignee_id != user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Personal tasks can only be assigned to yourself"
+                )
+    
+    # Update the assignment
+    task.assignee_id = assignment.assignee_id
+    task.updated_at = datetime.utcnow()
+    db.add(task)
+    db.commit()
+    db.refresh(task)
+    return task
+
+
+@router.get("/tasks/assigned-to-me", response_model=list[schemas.TaskResponse])
+def get_my_assigned_tasks(
+    status: models.StatusEnum | None = None,
+    priority: models.PriorityEnum | None = None,
+    project_id: int | None = None,
+    sort_by: SortBy | None = None,
+    sort_order: SortOrder | None = None,
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(models.get_db),
+    user_id=Depends(oauth2.get_current_user)
+):
+    """Get all tasks assigned to the current user."""
+    # Get projects where user is a member
+    accessible_project_ids = get_accessible_project_ids(db, user_id)
+    
+    # Build query for tasks assigned to current user
+    from sqlalchemy import or_
+    statement = select(models.Task).where(
+        models.Task.is_deleted == False,
+        models.Task.assignee_id == user_id
+    ).where(
+        or_(
+            models.Task.user_id == user_id,
+            models.Task.project_id.in_(accessible_project_ids)
+        )
+    )
+    
+    # Apply filters
+    if project_id:
+        if project_id not in accessible_project_ids:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have access to this project"
+            )
+        statement = statement.where(models.Task.project_id == project_id)
+    
+    if status:
+        statement = statement.where(models.Task.status == status)
+    if priority:
+        statement = statement.where(models.Task.priority == priority)
+    
+    # Apply sorting
+    if sort_by:
+        column = getattr(models.Task, sort_by.value)
+        if sort_order == SortOrder.DESC:
+            statement = statement.order_by(column.desc())
+        else:
+            statement = statement.order_by(column.asc())
+    
+    # Apply pagination
+    statement = statement.offset(offset).limit(limit)
+    
+    tasks = db.exec(statement).all()
+    return tasks
+
 
