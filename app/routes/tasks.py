@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status, HTTPException, Query
 from sqlmodel import Session, select
 from app import schemas, models
-from .. import oauth2
+from .. import oauth2, utils
 from datetime import datetime
 from enum import Enum
 
@@ -126,6 +126,35 @@ def create_task(
     db.add(new_task)
     db.commit()
     db.refresh(new_task)
+    
+    # Send email notification if task is assigned to someone other than the creator
+    if new_task.assignee_id and new_task.assignee_id != user_id:
+        assignee = db.get(models.User, new_task.assignee_id)
+        assigner = db.get(models.User, user_id)
+        project_name = None
+        
+        if new_task.project_id:
+            project = db.get(models.Project, new_task.project_id)
+            if project:
+                project_name = project.name
+        
+        # Format due date if exists
+        due_date_str = None
+        if new_task.due_date:
+            due_date_str = new_task.due_date.strftime("%B %d, %Y at %I:%M %p")
+        
+        # Send the email notification
+        utils.send_task_assignment_email(
+            receiver_email=assignee.email,
+            task_title=new_task.title,
+            task_description=new_task.description,
+            assigner_name=assigner.name,
+            task_id=new_task.task_id,
+            project_name=project_name,
+            due_date=due_date_str,
+            priority=new_task.priority.value
+        )
+    
     return new_task
 
 class SortBy(Enum):
@@ -244,8 +273,13 @@ def update_task(
         check_task_access(db, task, user_id)
     
     # Validate assignee_id if being updated
+    old_assignee_id = task.assignee_id  # Store old assignee_id before update
+    assignee_changed = False
+    
     if 'assignee_id' in task_data.model_dump(exclude_unset=True):
         new_assignee_id = task_data.assignee_id
+        assignee_changed = (new_assignee_id != old_assignee_id)
+        
         if new_assignee_id is not None:
             # Verify assignee exists
             assignee = db.get(models.User, new_assignee_id)
@@ -278,6 +312,35 @@ def update_task(
     db.add(task)
     db.commit()
     db.refresh(task)
+    
+    # Send email notification if assignee changed and is someone other than the updater
+    if assignee_changed and task.assignee_id and task.assignee_id != user_id:
+        assignee = db.get(models.User, task.assignee_id)
+        assigner = db.get(models.User, user_id)
+        project_name = None
+        
+        if task.project_id:
+            project = db.get(models.Project, task.project_id)
+            if project:
+                project_name = project.name
+        
+        # Format due date if exists
+        due_date_str = None
+        if task.due_date:
+            due_date_str = task.due_date.strftime("%B %d, %Y at %I:%M %p")
+        
+        # Send the email notification
+        utils.send_task_assignment_email(
+            receiver_email=assignee.email,
+            task_title=task.title,
+            task_description=task.description,
+            assigner_name=assigner.name,
+            task_id=task.task_id,
+            project_name=project_name,
+            due_date=due_date_str,
+            priority=task.priority.value
+        )
+    
     return task
 
 
@@ -441,6 +504,9 @@ def assign_task(
     else:
         check_task_access(db, task, user_id)
     
+    # Store old assignee_id before update
+    old_assignee_id = task.assignee_id
+    
     # If assigning to someone
     if assignment.assignee_id is not None:
         # Verify assignee exists
@@ -473,6 +539,36 @@ def assign_task(
     db.add(task)
     db.commit()
     db.refresh(task)
+    
+    # Send email notification if assignee changed and is someone other than the assigner
+    assignee_changed = (task.assignee_id != old_assignee_id)
+    if assignee_changed and task.assignee_id and task.assignee_id != user_id:
+        assignee = db.get(models.User, task.assignee_id)
+        assigner = db.get(models.User, user_id)
+        project_name = None
+        
+        if task.project_id:
+            project = db.get(models.Project, task.project_id)
+            if project:
+                project_name = project.name
+        
+        # Format due date if exists
+        due_date_str = None
+        if task.due_date:
+            due_date_str = task.due_date.strftime("%B %d, %Y at %I:%M %p")
+        
+        # Send the email notification
+        utils.send_task_assignment_email(
+            receiver_email=assignee.email,
+            task_title=task.title,
+            task_description=task.description,
+            assigner_name=assigner.name,
+            task_id=task.task_id,
+            project_name=project_name,
+            due_date=due_date_str,
+            priority=task.priority.value
+        )
+    
     return task
 
 
