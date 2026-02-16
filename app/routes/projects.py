@@ -64,7 +64,13 @@ def create_project(project_data : schemas.ProjectCreate, db : Session = Depends(
     return new_project
 
 @router.get("/projects", response_model=list[schemas.ProjectResponse])
-def get_all_projects(status : models.ProjectStatusEnum | None = None, created_at = None, db : Session = Depends(models.get_db), user_id = Depends(oauth2.get_current_user)):
+def get_all_projects(
+    search: str | None = Query(default=None, max_length=100, description="Search projects by name or description"),
+    status: models.ProjectStatusEnum | None = None,
+    created_at=None,
+    db: Session = Depends(models.get_db),
+    user_id=Depends(oauth2.get_current_user)
+):
     # Get all project IDs where user is a member
     member_project_ids = get_user_projects_query(db, user_id)
     
@@ -74,6 +80,16 @@ def get_all_projects(status : models.ProjectStatusEnum | None = None, created_at
         models.Project.is_deleted == False
     )
     
+    # search by name or description
+    if search:
+        from sqlalchemy import or_
+        search_pattern = f"%{search}%"
+        statement = statement.where(
+            or_(
+                models.Project.name.ilike(search_pattern),
+                models.Project.description.ilike(search_pattern)
+            )
+        )
     # filters
     if status:
         statement = statement.where(models.Project.status == status)

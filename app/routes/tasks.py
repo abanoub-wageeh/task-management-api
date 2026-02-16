@@ -167,6 +167,7 @@ class SortOrder(Enum):
 
 @router.get("/tasks", response_model=list[schemas.TaskResponse])
 def get_all_tasks(
+    search: str | None = Query(default=None, max_length=100, description="Search tasks by title or description"),
     status: models.StatusEnum | None = None,
     priority: models.PriorityEnum | None = None,
     project_id: int | None = None,
@@ -202,6 +203,15 @@ def get_all_tasks(
             )
         statement = statement.where(models.Task.project_id == project_id)
     
+    # search by title or description
+    if search:
+        search_pattern = f"%{search}%"
+        statement = statement.where(
+            or_(
+                models.Task.title.ilike(search_pattern),
+                models.Task.description.ilike(search_pattern)
+            )
+        )
     # filtering
     if status:
         statement = statement.where(models.Task.status == status)
@@ -407,6 +417,7 @@ def restore_deleted_task(task_id : int, db : Session = Depends(models.get_db), u
 @router.get("/projects/{project_id}/tasks", response_model=list[schemas.TaskResponse])
 def get_project_tasks(
     project_id: int,
+    search: str | None = Query(default=None, max_length=100, description="Search tasks by title or description"),
     status: models.StatusEnum | None = None,
     priority: models.PriorityEnum | None = None,
     assignee_id: int | None = None,
@@ -445,6 +456,16 @@ def get_project_tasks(
         models.Task.is_deleted == False
     )
     
+    # Search by title or description
+    if search:
+        from sqlalchemy import or_
+        search_pattern = f"%{search}%"
+        statement = statement.where(
+            or_(
+                models.Task.title.ilike(search_pattern),
+                models.Task.description.ilike(search_pattern)
+            )
+        )
     # Apply filters
     if status:
         statement = statement.where(models.Task.status == status)
