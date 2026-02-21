@@ -2,10 +2,7 @@ from sqlmodel import SQLModel, create_engine, Field, Session
 from pydantic import EmailStr
 from datetime import datetime
 from enum import Enum
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
+from app.config import settings
 
 class PriorityEnum(str, Enum):
     LOW = "low"
@@ -59,7 +56,7 @@ class Comment(SQLModel, table=True):
     task_id : int | None = Field(default=None, foreign_key="tasks.task_id")
 
 
-engine = create_engine(os.getenv("DATABASE_URL"))
+engine = create_engine(settings.DATABASE_URL)
 
 def get_db():
     with Session(engine) as db:

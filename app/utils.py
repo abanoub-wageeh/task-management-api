@@ -3,10 +3,7 @@ from pwdlib import PasswordHash
 import smtplib
 from email.message import EmailMessage
 
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
+from app.config import settings
 
 password_hash = PasswordHash.recommended()
 
@@ -21,8 +18,8 @@ def verify_password(plain_password, hashed_password):
 
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 465
-SENDER_EMAIL = os.getenv("EMAIL")
-SENDER_PASSWORD = os.getenv("APP_PASSWORD")
+SENDER_EMAIL = settings.EMAIL
+SENDER_PASSWORD = settings.APP_PASSWORD
 
 
 def send_email(to_email: str, subject: str, html_content: str):

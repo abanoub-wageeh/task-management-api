@@ -7,15 +7,12 @@ from jwt import InvalidTokenError, ExpiredSignatureError
 from datetime import datetime, timedelta
 
 
-import os
-from dotenv import load_dotenv
+from app.config import settings
 
-load_dotenv()
-
-SECRET_KEY = os.getenv("SECRET_KEY")
-ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
-ALGORITHM = os.getenv("ALGORITHM")
-REFRESH_TOKEN_EXPIRE_DAYS = os.getenv("REFRESH_TOKEN_EXPIRE_DAYS")
+SECRET_KEY = settings.SECRET_KEY
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
+ALGORITHM = settings.ALGORITHM
+REFRESH_TOKEN_EXPIRE_DAYS = settings.REFRESH_TOKEN_EXPIRE_DAYS
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
@@ -29,11 +26,11 @@ def create_token(data : dict, expire_delta : timedelta):
 
 
 def create_access_token(data : dict):
-    access_token = create_token({**data, "typ": "access"}, expire_delta=timedelta(minutes=int(ACCESS_TOKEN_EXPIRE_MINUTES)))
+    access_token = create_token({**data, "typ": "access"}, expire_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     return access_token
 
 def create_refresh_token(data : dict):
-    refresh_token = create_token({**data, "typ": "refresh"}, expire_delta=timedelta(days=int(REFRESH_TOKEN_EXPIRE_DAYS)))
+    refresh_token = create_token({**data, "typ": "refresh"}, expire_delta=timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS))
     return refresh_token
 
 def create_verification_token(data: dict):
